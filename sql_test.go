@@ -121,3 +121,47 @@ func TestQuerySqlComplex(t *testing.T) {
 		fmt.Println("CreatedAt:", createdAt)
 	}
 }
+
+func TestSqlInjection(t *testing.T) {
+	db := GetConnection()
+	defer func(db *sql.DB) {
+		err := db.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(db)
+
+	ctx := context.Background()
+	username := "admin'; #"
+	password := "notAdmin"
+
+	query := "SELECT username FROM user WHERE username = '" + username +
+		"' AND password = '" + password + "' LIMIT 1"
+
+	fmt.Println(query)
+
+	rows, err := db.QueryContext(ctx, query)
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer func(rows *sql.Rows) {
+		err := rows.Close()
+		if err != nil {
+
+		}
+	}(rows)
+
+	if rows.Next() {
+		var username string
+		err := rows.Scan(&username)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Username:", username)
+	} else {
+		fmt.Println("Login failed")
+	}
+}
